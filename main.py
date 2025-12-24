@@ -1,103 +1,49 @@
-# import FastAPI 
-# 
-# app = FastAPI()
+from fastapi import FastAPI, HTTPException, Path, Body
+from typing import Dict
 
-from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel
+app = FastAPI()
 
-app = FastAPI(title="Expense Manager API")
+expenses: Dict[int , dict] = {}
+next_id = 1
 
-# -------------------------
-# مدل هزینه
-# -------------------------
-class Expense(BaseModel):
-    description: str
-    amount: float
+@app.post("/expenses")
+def create_expense(
+    description: str = Body(... ,description="توضیح هزینه" ) ,
+    amount: float = Body(..., description="مبلغ هزینه")
+):
+    global next_id
+    expenses[next_id] = {
+        "id" : next_id,
+        "description" : description,
+        "amount" : amount 
+    }
+    next_id += 1
+    return expenses[next_id - 1]
 
-
-class ExpenseOut(Expense):
-    id: int
-
-
-# -------------------------
-# ذخیره‌سازی در حافظه
-# -------------------------
-expenses: dict[int, ExpenseOut] = {}
-current_id = 1
-
-
-# -------------------------
-# ایجاد هزینه جدید (CREATE)
-# -------------------------
-@app.post("/expenses", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)
-def create_expense(expense: Expense):
-    global current_id
-
-    new_expense = ExpenseOut(
-        id=current_id,
-        description=expense.description,
-        amount=expense.amount
-    )
-
-    expenses[current_id] = new_expense
-    current_id += 1
-
-    return new_expense
-
-
-# -------------------------
-# دریافت همه هزینه‌ها (READ ALL)
-# -------------------------
-@app.get("/expenses", response_model=list[ExpenseOut])
+@app.get("/expenses")
 def get_all_expenses():
     return list(expenses.values())
 
+@app.get("/expenses/{expense_id}")
+def get_expense (expense_id : int  = Path(..., description="شناسه هزینه")):
+    if expense_id not in expenses :
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return expenses[expense_id]    
 
-# -------------------------
-# دریافت یک هزینه با ID (READ ONE)
-# -------------------------
-@app.get("/expenses/{expense_id}", response_model=ExpenseOut)
-def get_expense(expense_id: int):
-    if expense_id not in expenses:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense not found"
-        )
+@app.put("/expenses/{expense_id}")
+def update_expense(
+    expense_id: int = Path(..., description="شناسه هزینه"),
+    description: str = Body(..., description="توضیح جدید"),
+    amount: float = Body(..., description="مبلغ جدید ")
+):
+    if expense_id not in expenses :
+        raise HTTPException(status_code=404, detail="expense not found")
+    expenses[expense_id]["description"] = description
+    expenses[expense_id]["amount"] = amount
     return expenses[expense_id]
 
-
-# -------------------------
-# ویرایش هزینه (UPDATE)
-# -------------------------
-@app.put("/expenses/{expense_id}", response_model=ExpenseOut)
-def update_expense(expense_id: int, updated_expense: Expense):
+@app.delete("/expenses/{expense_id}")
+def delete_expense(expense_id: int = Path(..., description="شناسه هزینه")):
     if expense_id not in expenses:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense not found"
-        )
-
-    expense = ExpenseOut(
-        id=expense_id,
-        description=updated_expense.description,
-        amount=updated_expense.amount
-    )
-
-    expenses[expense_id] = expense
-    return expense
-
-
-# -------------------------
-# حذف هزینه (DELETE)
-# -------------------------
-@app.delete("/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_expense(expense_id: int):
-    if expense_id not in expenses:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense not found"
-        )
-
-    del expenses[expense_id]
-
-
+        raise HTTPException(status_code=404 , detail="expense not found")
+    return expenses.pop(expense_id)
