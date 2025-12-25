@@ -1,21 +1,18 @@
 from fastapi import FastAPI, HTTPException, Path, Body
 from typing import Dict
-
+from schemas import ExpenseSchema
 app = FastAPI()
 
 expenses: Dict[int , dict] = {}
 next_id = 1
 
 @app.post("/expenses")
-def create_expense(
-    description: str = Body(... ,description="توضیح هزینه" ) ,
-    amount: float = Body(..., description="مبلغ هزینه")
-):
+def create_expense(expense: ExpenseSchema):
     global next_id
     expenses[next_id] = {
         "id" : next_id,
-        "description" : description,
-        "amount" : amount 
+        "description" : expense.name,
+        "amount" : expense.amount 
     }
     next_id += 1
     return expenses[next_id - 1]
@@ -32,14 +29,13 @@ def get_expense (expense_id : int  = Path(..., description="شناسه هزین�
 
 @app.put("/expenses/{expense_id}")
 def update_expense(
-    expense_id: int = Path(..., description="شناسه هزینه"),
-    description: str = Body(..., description="توضیح جدید"),
-    amount: float = Body(..., description="مبلغ جدید ")
+    expense: ExpenseSchema,
+    expense_id: int = Path(..., description="شناسه هزینه")
 ):
     if expense_id not in expenses :
         raise HTTPException(status_code=404, detail="expense not found")
-    expenses[expense_id]["description"] = description
-    expenses[expense_id]["amount"] = amount
+    expenses[expense_id]["description"] = expense.name
+    expenses[expense_id]["amount"] = expense.amount
     return expenses[expense_id]
 
 @app.delete("/expenses/{expense_id}")
