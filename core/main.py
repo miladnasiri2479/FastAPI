@@ -23,7 +23,7 @@ def create_expense(expense: ExpenseSchema, db: Session = Depends(get_db)):
         }
 
     except Exception as e:
-        db.rollback() # در صورت خطا، تغییرات ذخیره نشده را برمی‌گرداند
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"An error occurred: {str(e)}")
@@ -53,10 +53,9 @@ def update_expense(
     expense_id: int = Path(..., description="شناسه هزینه"), 
     db: Session = Depends(get_db)
 ):
-    # ۱. جستجوی رکورد در دیتابیس
+
     db_person=db.query(Person).filter(Person.id == expense_id).first()
 
-    # ۲. اگر وجود نداشت، خطا بدهد
     if not db_person:
         raise HTTPException(status_code=404, detail="Object not found, update failed")
 
@@ -83,6 +82,7 @@ def delete_expense(
                     expense_id: int = Path(..., description="شناسه هزینه"), 
                     db: Session = Depends(get_db)
 ):
+    
     db_person = db.query(Person).filter(Person.id == expense_id).first()
 
     if not db_person:
