@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Path, Body
 from typing import Dict
 from schemas import ExpenseSchema
+from database import
+
 app = FastAPI()
 
 expenses: Dict[int , dict] = {}
