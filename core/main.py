@@ -7,6 +7,7 @@ from database import  get_db , Person
 
 app = FastAPI()
 
+
 expenses: Dict[int , dict] = {}
 
 @app.post("/expenses")

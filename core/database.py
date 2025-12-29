@@ -1,12 +1,11 @@
 from sqlalchemy import create_engine , Column , Integer , String , Boolean , ForeignKey 
-from sqlalchemy.orm import sessionmaker , DeclarativeBase 
+from sqlalchemy.orm import sessionmaker , DeclarativeBase  , Relationship
+from config import settings
 
-# ۱. اصلاح آدرس: نام فایل معمولاً .db یا .sqlite است
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 
-# ۲. ایجاد موتور (نکته: check_same_thread فقط برای SQLite نیاز است)
+
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+   settings.database_url, connect_args={"check_same_thread": False}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -14,12 +13,22 @@ session = SessionLocal()
 class Base(DeclarativeBase):
     pass
 
-
 class Person(Base):
     __tablename__ = "persons"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String())
+    name = Column(String)
+    
+    expenses = Relationship("Expense", back_populates="owner")
+
+class Expense(Base):
+    __tablename__ = "expenses"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_name = Column(String)
     amount = Column(Integer)
+    
+    owner_id = Column(Integer, ForeignKey("persons.id"))
+    
+    owner = Relationship("Person", back_populates="expenses")
 
 Base.metadata.create_all(bind=engine)
 
