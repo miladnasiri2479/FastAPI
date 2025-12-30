@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 # Import the SQLAlchemy Base from your database module
 from core.database import Base
+from core.models import Task
 
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

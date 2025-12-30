@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker , DeclarativeBase
 from core.config import settings
-
+from core.models import Task
 
 
 engine = create_engine(
