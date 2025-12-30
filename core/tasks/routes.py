@@ -26,7 +26,7 @@ async def retrieve_task_detail(task_id: int = Path(..., gt=0),db:Session = Depen
     return task_obj
 
 
-@router.post("/tasks")#,response_model=TaskResponseSchema)
+@router.post("/tasks",response_model=TaskResponseSchema)
 async def create_task(request:TaskCreateSchema,db:Session = Depends(get_db)):
     task_obj = TaskModel(**request.model_dump())
     db.add(task_obj)

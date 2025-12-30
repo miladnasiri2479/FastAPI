@@ -1,2 +1,3 @@
 fatapi[all]= 0.128
 alembic = 1.17.2
+passlib = passlib-1.7.4

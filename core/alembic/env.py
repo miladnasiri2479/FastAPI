@@ -5,6 +5,8 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from pathlib import Path
 from dotenv import load_dotenv
+from core.database import Base
+
 
 # --- Path Setup (Crucial for your nested structure) ---
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,8 +16,8 @@ sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
 # Now import the SQLAlchemy Base and Models
-from core.database import Base
-from tasks.models import Task
+from tasks.models import TaskModel
+from users.models import *
 
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -51,6 +53,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True
     )
 
     with context.begin_transaction():
@@ -81,6 +84,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             # render_as_batch is required for SQLite to support ALTER TABLE operations
             render_as_batch=True 
+
         )
 
         with context.begin_transaction():
