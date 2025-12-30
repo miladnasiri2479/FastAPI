@@ -1,15 +1,14 @@
 import os
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from core.database import Base
+from sqlalchemy import engine_from_config, pool
 from alembic import context
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Import the SQLAlchemy Base from your database module
+from core.database import Base
 
-# this is the Alembic Config object, which provides
+# This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
@@ -18,45 +17,28 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-
-# Define the path to the .env file (parent directory of FastAPI project)
-BASE_DIR = Path(__file__).resolve().parent.parent  # Move up one directory
+# --- Environment Variable Setup ---
+# Locate the .env file in the core directory (one level up from this file's directory)
+BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / ".env"
 
 if ENV_PATH.exists():
     load_dotenv(ENV_PATH)
 else:
-    # Log or handle that the .env file is missing, but proceed with global env variables
-    print(f"Warning: .env file not found. Falling back to global environment variables.")
+    print(f"Warning: .env file not found at {ENV_PATH}. Using default settings.")
 
 # Get the database URL from environment variables
 SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+# Add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
-
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
     """
-    url = config.get_main_option("sqlalchemy.url")
+    Run migrations in 'offline' mode.
+    This configures the context with just a URL and not an Engine.
+    """
+    url = SQLALCHEMY_DATABASE_URL or config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -67,16 +49,20 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
     """
+    Run migrations in 'online' mode.
+    In this scenario, we create an Engine and associate a connection with the context.
+    """
+    # 1. Get the configuration section from alembic.ini
     conf_section = config.get_section(config.config_ini_section, {})
-    conf_section["sqlalchemy.url"] = SQLALCHEMY_DATABASE_URL
+    
+    # 2. Inject the Database URL from environment variables
+    # Default to a local sqlite file if the environment variable is not set
+    url = SQLALCHEMY_DATABASE_URL or "sqlite:///./sqlite.db"
+    conf_section["sqlalchemy.url"] = url
+
+    # 3. Create the engine from the modified configuration
     connectable = engine_from_config(
         conf_section,
         prefix="sqlalchemy.",
@@ -85,13 +71,16 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata,
+            # render_as_batch is required for SQLite to support ALTER TABLE operations
+            render_as_batch=True 
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
-
+# Determine if we should run in offline or online mode
 if context.is_offline_mode():
     run_migrations_offline()
 else:
