@@ -1,13 +1,21 @@
 import os
+import sys
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Import the SQLAlchemy Base from your database module
+# --- Path Setup (Crucial for your nested structure) ---
+BASE_DIR = Path(__file__).resolve().parent.parent
+# This adds the directory containing 'core' to sys.path
+sys.path.insert(0, str(BASE_DIR))
+# This adds the inner 'core' directory to sys.path
+sys.path.insert(0, str(BASE_DIR / "core"))
+
+# Now import the SQLAlchemy Base and Models
 from core.database import Base
-from core.models import Task
+from tasks.models import Task
 
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,8 +27,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # --- Environment Variable Setup ---
-# Locate the .env file in the core directory (one level up from this file's directory)
-BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / ".env"
 
 if ENV_PATH.exists():
@@ -59,7 +65,6 @@ def run_migrations_online() -> None:
     conf_section = config.get_section(config.config_ini_section, {})
     
     # 2. Inject the Database URL from environment variables
-    # Default to a local sqlite file if the environment variable is not set
     url = SQLALCHEMY_DATABASE_URL or "sqlite:///./sqlite.db"
     conf_section["sqlalchemy.url"] = url
 
