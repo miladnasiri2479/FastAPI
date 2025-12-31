@@ -6,9 +6,15 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from typing import List
 import secrets
+from users.models import TokenModel
+import secrets
+
 
 router = APIRouter(tags=["users"], prefix="/users")
 
+def generate_token(length=32):
+    """Generate a secure random token as a string."""
+    return secrets.token_hex(length)
 
 
 @router.post("/login")
@@ -30,15 +36,15 @@ async def user_login(request: UserLoginSchema, db: Session = Depends(get_db)):
         )
 
     # Token Based Authentication
-    # token_obj = TokenModel(user_id = user_obj.id,token=generate_token())
-    # db.add(token_obj)
-    # db.commit()
-    # db.refresh(token_obj)
+    token_obj = TokenModel(user_id = user_obj.id,token=generate_token())
+    db.add(token_obj)
+    db.commit()
+    db.refresh(token_obj)
     return JSONResponse(
         content={
             "detail": "logged in successfully",
-        #    "access_token": access_token,
-        #    "refresh_token": refresh_token,
+            #"access_token": access_token,
+            #"refresh_token": refresh_token,
         }
     )
 

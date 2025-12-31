@@ -46,3 +46,16 @@ app = FastAPI(
 app.include_router(tasks_routes)
 app.include_router(users_routs)
 
+from auth.token_auth import get_authenticated_user
+from fastapi.security import HTTPBearer , HTTPAuthorizationCredentials
+security = HTTPBearer(scheme_name="Token")
+
+@app.get("/public")
+def public_route():
+    return {"this is public route"}
+
+
+@app.get("/private")
+def private_route(user= Depends(get_authenticated_user)):
+    print(user.username)
+    return {"message": "this is private route"}
