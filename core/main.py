@@ -3,6 +3,7 @@ from starlette.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from tasks.routes import router as tasks_routes
+from users.routes import router as users_routs
 from core.config import settings
 
 
@@ -43,3 +44,5 @@ app = FastAPI(
 
 )
 app.include_router(tasks_routes)
+app.include_router(users_routs)
+
