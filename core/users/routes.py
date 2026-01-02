@@ -7,6 +7,7 @@ from core.database import get_db
 from typing import List
 import secrets
 from users.models import TokenModel
+from auth.jwt_auth import generate_access_token , generate_refresh_token , decode_refresh_token
 import secrets
 
 
@@ -36,15 +37,17 @@ async def user_login(request: UserLoginSchema, db: Session = Depends(get_db)):
         )
 
     # Token Based Authentication
-    token_obj = TokenModel(user_id = user_obj.id,token=generate_token())
-    db.add(token_obj)
-    db.commit()
-    db.refresh(token_obj)
+    #token_obj = TokenModel(user_id = user_obj.id,token=generate_token())
+    #db.add(token_obj)
+    #db.commit()
+    #db.refresh(token_obj)
+    access_token = generate_access_token(user_obj.id)
+    refresh_token = generate_refresh_token(user_obj.id)
     return JSONResponse(
         content={
             "detail": "logged in successfully",
-            #"access_token": access_token,
-            #"refresh_token": refresh_token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
         }
     )
 
@@ -67,3 +70,11 @@ async def user_register(
     db.add(user_obj)
     db.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED,content={"detail": "user registered successfully"})
+
+@router.post("/refresh-token")
+async def user_refresh_token(
+    request: UserRefreshTokenSchema, db: Session = Depends(get_db)
+):
+    user_id = decode_refresh_token(request.token)
+    access_token = generate_access_token(user_id)
+    return JSONResponse(content={"access_token": access_token})

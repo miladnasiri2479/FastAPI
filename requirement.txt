@@ -2,3 +2,4 @@ fatapi[all]= 0.128
 alembic = 1.17.2
 passlib = passlib-1.7.4
 bcrypt= bcrypt-5.0.0
+pyjwt = pyjwt-2.10.1
