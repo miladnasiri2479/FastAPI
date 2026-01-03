@@ -28,3 +28,7 @@ class UserRegisterSchema(BaseModel):
 
 class UserRefreshTokenSchema(BaseModel):
     token: str = Field(..., description="refresh token of the user")
+
+class UserLogin(BaseModel):
+    username: str
+    password: str

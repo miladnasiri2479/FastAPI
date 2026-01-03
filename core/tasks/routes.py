@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, Depends, HTTPException, Query
+from fastapi import APIRouter, Path, Depends, HTTPException, Query , Response, Request
 from fastapi.responses import JSONResponse
 from tasks.schemas import *
 from tasks.models import TaskModel
@@ -6,7 +6,7 @@ from users.models import UserModel
 from sqlalchemy.orm import Session
 from core.database import get_db
 from typing import List
-from auth.jwt_auth import get_authenticated_user
+from auth.jwt_auth import get_authenticated_user , create_access_token , create_refresh_token , verify_token
 
 
 router = APIRouter(tags=["tasks"])
@@ -99,3 +99,70 @@ async def delete_task(
         raise HTTPException(status_code=404, detail="Task not found")
     db.delete(task_obj)
     db.commit()
+
+
+@router.post("/login")
+async def login(response: Response, login_data: UserLogin, db: Session = Depends(get_db)):
+    # ... منطق تایید پسورد کاربر ...
+    
+    # استفاده از توابعی که قبلا در jwt_auth نوشتی
+    access_token = create_access_token(data={"sub": user.username})
+    refresh_token = create_refresh_token(data={"sub": user.username})
+
+    # تنظیم کوکی‌ها طبق خواسته تمرین (HttpOnly و Secure)
+    response.set_cookie(
+        key="access_token", 
+        value=access_token, 
+        httponly=True,   # جلوگیری از حمله XSS
+        secure=True,     # ارسال فقط روی HTTPS (در لوکال False بذار)
+        samesite="lax"   # جلوگیری از حمله CSRF
+    )
+    response.set_cookie(
+        key="refresh_token", 
+        value=refresh_token, 
+        httponly=True, 
+        secure=True, 
+        samesite="lax",
+        path="/auth/refresh" # محدود کردن دامنه ارسال ریفرش توکن
+    )
+    
+    return {"message": "ورود موفقیت‌آمیز بود"}
+@router.post("/refresh")
+async def refresh(request: Request, response: Response):
+    # ۱. خواندن ریفرش توکن از کوکی
+    rf_token = request.cookies.get("refresh_token")
+    if not rf_token:
+        raise HTTPException(status_code=401, detail="Refresh token not found")
+    
+    # ۲. استفاده از تابع verify_token که خودت نوشتی
+    # این تابع توکن رو چک میکنه و اگر سالم بود دیتای داخلش رو میده
+    token_data = verify_token(rf_token) 
+    
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    
+    # ۳. استخراج user_id (چون تو در کدت از user_id استفاده کردی نه sub)
+    user_id = token_data.get("user_id")
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User ID not found in token")
+            
+    # ۴. تولید اکسس توکن جدید با تابع خودت
+    new_access = create_access_token(user_id=user_id)
+    
+    # ۵. قرار دادن در کوکی
+    response.set_cookie(
+        key="access_token", 
+        value=new_access, 
+        httponly=True, 
+        secure=False, # در لوکال False
+        samesite="lax"
+    )
+    
+    return {"status": "success", "message": "Access token renewed"}
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return {"message": "خارج شدید"}
