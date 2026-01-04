@@ -1,32 +1,30 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
 
-class TaskBaseSchema(BaseModel):
-    title: str = Field(
-        ..., max_length=150, min_length=5, description="Title of the task"
+class UserLoginSchema(BaseModel):
+    username: str = Field(
+        ..., max_length=250, description="username of the user"
     )
-    description: Optional[str] = Field(
-        None, max_length=500, description="Description of the task"
+    password: str = Field(..., description="password of the user")
+
+
+class UserRegisterSchema(BaseModel):
+    username: str = Field(
+        ..., max_length=250, description="username of the user"
     )
-    is_completed: bool = Field(..., description="State of the task")
-
-
-class TaskCreateSchema(TaskBaseSchema):
-    pass
-
-
-class TaskUpdateSchema(TaskBaseSchema):
-    pass
-
-
-class TaskResponseSchema(TaskBaseSchema):
-    id: int = Field(..., description="Unique identifier of the object")
-
-    created_date: datetime = Field(
-        ..., description="Creation date and time of the object"
+    password: str = Field(..., description="password of the user")
+    password_confirm: str = Field(
+        ..., description="confirm password of the user"
     )
-    updated_date: datetime = Field(
-        ..., description="Updating date and time of the object"
-    )
+
+    @field_validator("password_confirm")
+    def check_passwords_match(cls, password_confirm, validation):
+        if not (password_confirm == validation.data.get("password")):
+            raise ValueError("passwords doesnt match")
+        return password_confirm
+
+
+class UserRefreshTokenSchema(BaseModel):
+    token: str = Field(..., description="refresh token of the user")
